@@ -1,10 +1,11 @@
 import express from "express";
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import { config } from "./config.js";
 
 const app = express();
 const PORT = 8090;
 
-const middlewareLogResponses = (req: Request, res: Response, next: any) => {
+const middlewareLogResponses = (req: Request, res: Response, next: NextFunction) => {
   res.on("finish", () => {
     const statusCode = res.statusCode;
     if (statusCode != 200) {
@@ -13,8 +14,14 @@ const middlewareLogResponses = (req: Request, res: Response, next: any) => {
   })
   next();
 }
-app.use("/app", express.static("./src/app"));
+
+const middlewareMetricsInc = (req: Request, res: Response, next: NextFunction) => {
+  config.fileserverHits++;
+  next();
+}
+
 app.use(middlewareLogResponses);
+app.use("/app", middlewareMetricsInc, express.static("./src/app"));
 
 const handlerReadiness = (req: Request, res: Response) => {
   res.status(200); // Automatically set to 200, this is redundant
@@ -22,7 +29,20 @@ const handlerReadiness = (req: Request, res: Response) => {
   res.send("OK");
 };
 
+const handlerServerHits = (req: Request, res: Response) => {
+  res.send(`Hits: ${config.fileserverHits}`);
+}
+
+const handlerResetHits = (req: Request, res: Response) => {
+  config.fileserverHits = 0;
+  res.send("Hits reset");
+}
+
+app.get("/metrics", handlerServerHits);
+
 app.get("/healthz", handlerReadiness);
+
+app.get("/reset", handlerResetHits);
 
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
