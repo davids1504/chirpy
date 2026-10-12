@@ -38,11 +38,11 @@ const handlerResetHits = (req: Request, res: Response) => {
   res.send("Hits reset");
 }
 
-app.get("/metrics", handlerServerHits);
+app.get("/api/healthz", handlerReadiness);
 
-app.get("/healthz", handlerReadiness);
+app.get("/api/metrics", handlerServerHits);
 
-app.get("/reset", handlerResetHits);
+app.get("/api/reset", handlerResetHits);
 
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
