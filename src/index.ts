@@ -1,9 +1,15 @@
 import express from "express";
 import { Request, Response, NextFunction } from "express";
 import { config } from "./config.js";
+import { respondWithJSON, respondWithError } from "./json.js";
 
 const app = express();
 const PORT = 8090;
+const maxChirpLength = 140;
+
+type ChirpRequestBody = {
+  body: string;
+};
 
 const middlewareLogResponses = (req: Request, res: Response, next: NextFunction) => {
   res.on("finish", () => {
@@ -50,6 +56,28 @@ app.get("/api/healthz", handlerReadiness);
 app.get("/admin/metrics", handlerServerHits);
 
 app.post("/admin/reset", handlerResetHits);
+
+app.post("/api/validate_chirp", (req: Request, res: Response) => {
+  let body = "";
+
+  req.on("data", (chunk) => {
+    body += chunk;
+  })
+
+  req.on("end", () => {
+    try {
+      const parsedBody: ChirpRequestBody = JSON.parse(body);
+      if (parsedBody.body.length > maxChirpLength) {
+        respondWithError(res, 400, "Chirp is too long");
+        return;
+      }
+      respondWithJSON(res, 200, { valid: true });
+    } catch (error) {
+      respondWithError(res, 400, "Something went wrong");
+      return;
+    }
+  })
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
