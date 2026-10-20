@@ -30,7 +30,14 @@ const handlerReadiness = (req: Request, res: Response) => {
 };
 
 const handlerServerHits = (req: Request, res: Response) => {
-  res.send(`Hits: ${config.fileserverHits}`);
+  res.set("Content-Type", "text/html; charset=utf-8");
+  res.send(`
+<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited ${config.fileserverHits} times!</p>
+  </body>
+</html>`);
 }
 
 const handlerResetHits = (req: Request, res: Response) => {
@@ -40,9 +47,9 @@ const handlerResetHits = (req: Request, res: Response) => {
 
 app.get("/api/healthz", handlerReadiness);
 
-app.get("/api/metrics", handlerServerHits);
+app.get("/admin/metrics", handlerServerHits);
 
-app.get("/api/reset", handlerResetHits);
+app.post("/admin/reset", handlerResetHits);
 
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
