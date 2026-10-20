@@ -6,6 +6,7 @@ import {respondWithJSON, respondWithError} from "./json.js";
 const app = express();
 const PORT = 8090;
 const maxChirpLength = 140;
+const profanities = ["kerfuffle", "sharbert", "fornax"];
 
 type ChirpRequestBody = {
     body: string;
@@ -70,7 +71,16 @@ app.post("/api/validate_chirp", (req: Request, res: Response) => {
             respondWithError(res, 400, "Chirp is too long");
             return;
         }
-        respondWithJSON(res, 200, {valid: true});
+        const responseWords = params.body.split(" ");
+        for (const word of responseWords) {
+            if (profanities.includes(word.toLowerCase())) {
+                responseWords[responseWords.indexOf(word)] = "****";
+            }
+        }
+
+        let filteredResponse = responseWords.join(" ");
+
+        respondWithJSON(res, 200, {cleanedBody: filteredResponse});
     } catch (error) {
         respondWithError(res, 400, "Something went wrong");
         return;
