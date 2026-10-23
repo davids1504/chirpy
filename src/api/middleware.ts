@@ -1,5 +1,7 @@
 import {Request, Response, NextFunction} from "express";
 import {config} from "../config.js";
+import {NotFoundError, UserForbiddenError, UserNotAuthenticatedError, BadRequestError} from "./errors.js";
+import {respondWithError} from "../json.js";
 
 export const middlewareLogResponses = (req: Request, res: Response, next: NextFunction) => {
     res.on("finish", () => {
@@ -16,14 +18,32 @@ export const middlewareMetricsInc = (req: Request, res: Response, next: NextFunc
     next();
 }
 
-export function errorHandler(
+export function errorMiddleware(
     err: Error,
-    req: Request,
+    _: Request,
     res: Response,
-    next: NextFunction,
+    __: NextFunction,
 ) {
-    console.log(err);
-    res.status(500).json({
-        error: "Something went wrong on our end",
-    });
+    let statusCode = 500;
+    let message = "Something went wrong on our end";
+
+    if (err instanceof BadRequestError) {
+        statusCode = 400;
+        message = err.message;
+    } else if (err instanceof UserNotAuthenticatedError) {
+        statusCode = 401;
+        message = err.message;
+    } else if (err instanceof UserForbiddenError) {
+        statusCode = 403;
+        message = err.message;
+    } else if (err instanceof NotFoundError) {
+        statusCode = 404;
+        message = err.message;
+    }
+
+    if (statusCode >= 500) {
+        console.log(err.message);
+    }
+
+    respondWithError(res, statusCode, message);
 }
